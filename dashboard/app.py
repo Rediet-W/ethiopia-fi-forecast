@@ -11,86 +11,67 @@ st.set_page_config(
     layout="wide"
 )
 
-# Robust Path Resolution for Data Loading
 @st.cache_data
-def load_data():
-    paths_to_check = [
+def load_app_data():
+    paths = [
         Path("../data/processed/ethiopia_fi_enriched_data.csv"),
         Path("data/processed/ethiopia_fi_enriched_data.csv"),
         Path("ethiopia_fi_enriched_data.csv")
     ]
-    for path in paths_to_check:
-        if path.exists():
-            return pd.read_csv(path)
-    
-    # Comprehensive fallback frame matching schema if file is missing
+    for p in paths:
+        if p.exists():
+            return pd.read_csv(p)
     return pd.DataFrame({
-        'observation_date': ['2021-12-31', '2024-12-31', '2023-08-16'],
-        'pillar': ['Access', 'Usage', 'Infrastructure'],
-        'indicator_code': ['ACCOUNT_OWNERSHIP', 'DIGITAL_PAYMENT', 'MPESA_LAUNCH'],
-        'value_numeric': [46.0, 48.0, np.nan],
-        'confidence': ['high', 'high', 'high'],
-        'record_type': ['observation', 'observation', 'event']
+        'observation_date': ['2021-12-31', '2024-12-31'],
+        'pillar': ['Access', 'Usage'],
+        'value_numeric': [49.0, 48.0],
+        'confidence': ['high', 'high']
     })
 
-df = load_data()
+df = load_app_data()
 
-# App Title & Overview
-st.title("🇪🇹 Ethiopia Financial Inclusion & Forecasting Dashboard")
-st.markdown("**Selam Analytics Consortium** | Monitoring Access, Usage, and 2025–2027 Projections")
+st.title("🇪🇹 Ethiopia Financial Inclusion & Forecasting Platform")
+st.markdown("**Selam Analytics Consortium** | Finance Sector Capstone Dashboard")
 
 # Sidebar Navigation
 st.sidebar.header("Navigation Menu")
 page = st.sidebar.radio("Select View:", [
-    "Overview Page", 
-    "Trends & Channels", 
+    "Overview & KPIs", 
+    "Historical Trends & Channels", 
     "Event Impact Matrix", 
-    "Forecasts Page", 
-    "National Targets & Projections"
+    "2025–2027 Forecasts", 
+    "National Target Tracking"
 ])
 
-if page == "Overview Page":
-    st.subheader("Executive Summary & Key Metrics")
-    
+if page == "Overview & KPIs":
+    st.subheader("Executive Summary & Core Metrics")
     col1, col2, col3 = st.columns(3)
-    col1.metric(label="Latest Account Ownership", value="49.0%", delta="+3.0pp vs 2021 (Findex)")
-    col2.metric(label="Mobile Money Accounts", value="54M+", delta="Exponential Telebirr Growth")
-    col3.metric(label="P2P/ATM Crossover Ratio", value="> 1.0x", delta="Digital Volume Surpasses ATM")
+    col1.metric("Latest Account Ownership", "49.0%", "+3.0pp vs 2021")
+    col2.metric("Mobile Money Accounts", "54M+", "Telebirr & M-Pesa Scale")
+    col3.metric("P2P/ATM Crossover Ratio", "> 1.0x", "Digital Volume Dominance")
     
     st.markdown("---")
-    st.info("💡 **Core Context:** While registered accounts and mobile money usage have surged, active digital payment adoption requires continued expansion in rural agent liquidity and merchant acceptance networks.")
-
-    st.subheader("Dataset Preview (Unified Schema)")
+    st.info("💡 **Core Insight:** Digital transaction velocity has successfully surpassed traditional ATM cash withdrawals, though active wallet usage requires targeted agent liquidity support.")
     st.dataframe(df.head(10), use_container_width=True)
 
-elif page == "Trends & Channels":
-    st.subheader("Historical Trends & Channel Comparison")
-    
-    # Interactive Visual 1: Long-Term Trajectory Line Plot
+elif page == "Historical Trends & Channels":
+    st.subheader("Long-Term Inclusion Trajectory (2011–2024)")
     trend_data = pd.DataFrame({
         'Year': [2011, 2014, 2017, 2021, 2024],
         'Account_Ownership': [14.0, 22.0, 35.0, 46.0, 49.0],
         'Digital_Payments': [10.0, 16.0, 25.0, 35.0, 48.0]
     })
+    fig1 = px.line(trend_data, x='Year', y=['Account_Ownership', 'Digital_Payments'], markers=True, title="Access vs. Usage Growth Rates")
+    st.plotly_chart(fig1, use_container_width=True)
     
-    fig_trend = px.line(trend_data, x='Year', y=['Account_Ownership', 'Digital_Payments'], 
-                        markers=True, title="Long-Term Financial Inclusion Trajectory (2011–2024)")
-    fig_trend.update_layout(yaxis_title="Percentage (%)", xaxis_title="Survey Year")
-    st.plotly_chart(fig_trend, use_container_width=True)
-    
-    # Interactive Visual 2: Pillar Record Distribution Bar Chart
     if 'pillar' in df.columns:
-        pillar_counts = df['pillar'].value_counts().reset_index()
-        pillar_counts.columns = ['Pillar', 'Count']
-        fig_pillars = px.bar(pillar_counts, x='Pillar', y='Count', color='Pillar',
-                             title="Dataset Record Distribution Across Core Pillars")
-        st.plotly_chart(fig_pillars, use_container_width=True)
+        p_counts = df['pillar'].value_counts().reset_index()
+        p_counts.columns = ['Pillar', 'Count']
+        fig2 = px.bar(p_counts, x='Pillar', y='Count', color='Pillar', title="Record Distribution Across Pillars")
+        st.plotly_chart(fig2, use_container_width=True)
 
 elif page == "Event Impact Matrix":
-    st.subheader("Event-Indicator Association Matrix (Task 3 Integration)")
-    st.markdown("Analyzing how major structural events (product launches, regulatory reforms, infrastructure) influence financial inclusion indicators.")
-    
-    # Interactive Visual 3: Association Heatmap Matrix
+    st.subheader("Event-Indicator Association Matrix (Task 3)")
     matrix_data = pd.DataFrame({
         'ACC_OWNERSHIP': [4.5, 2.0, 3.5, 5.0, 1.5],
         'ACC_MM_ACCOUNT': [8.2, 3.5, 6.0, 2.0, 4.0],
@@ -98,19 +79,12 @@ elif page == "Event Impact Matrix":
         'AGENT_DENSITY': [6.0, 5.0, 4.5, 1.0, 2.0]
     }, index=['Telebirr Launch (2021)', 'Safaricom Entry (2022)', 'M-Pesa Launch (2023)', 'Fayda National ID', 'EthSwitch Interop'])
     
-    fig_heat = px.imshow(matrix_data, text_auto=True, color_continuousScale="YlGnBu",
-                         labels=dict(x="Target Indicators", y="Cataloged Events", color="Impact Magnitude"),
-                         title="Event Impact Magnitude Heatmap")
-    st.plotly_chart(fig_heat, use_container_width=True)
+    fig3 = px.imshow(matrix_data, text_auto=True, color_continuousScale="YlGnBu", title="Event Impact Magnitude Heatmap")
+    st.plotly_chart(fig3, use_container_width=True)
 
-elif page == "Forecasts Page":
-    st.subheader("Predictive Modeling & Confidence Intervals (2025–2027)")
-    
-    model_choice = st.selectbox("Select Forecasting Approach:", [
-        "Event-Augmented Trend Regression", 
-        "Linear Growth Projection", 
-        "Exponential Scenario Model"
-    ])
+elif page == "2025–2027 Forecasts":
+    st.subheader("Multi-Scenario Predictive Modeling")
+    scenario = st.selectbox("Select Macroeconomic Scenario:", ["Baseline", "Optimistic", "Pessimistic"])
     
     forecast_df = pd.DataFrame({
         'Year': [2021, 2024, 2025, 2026, 2027],
@@ -119,35 +93,19 @@ elif page == "Forecasts Page":
         'Pessimistic': [46.0, 49.0, 50.0, 51.0, 52.0]
     })
     
-    # Interactive Visual 4: Multi-Scenario Forecast Plot
-    fig_forecast = px.line(forecast_df, x='Year', y=['Baseline', 'Optimistic', 'Pessimistic'],
-                           markers=True, title=f"Account Ownership Projections ({model_choice})")
-    fig_forecast.update_layout(yaxis_title="Projected Account Ownership (%)")
-    st.plotly_chart(fig_forecast, use_container_width=True)
+    fig4 = px.line(forecast_df, x='Year', y=['Baseline', 'Optimistic', 'Pessimistic'], markers=True, title="Account Ownership Projections with Confidence Bounds")
+    st.plotly_chart(fig4, use_container_width=True)
 
-elif page == "National Targets & Projections":
+elif page == "National Target Tracking":
     st.subheader("Progress Toward National 60% Target")
-    
-    scenario = st.selectbox("Select Macro Scenario for Target Tracking:", ["Baseline", "Optimistic", "Pessimistic"])
-    
-    target_val = 60.0
-    projected_2027 = 62.5 if scenario == "Optimistic" else (56.5 if scenario == "Baseline" else 52.0)
-    progress_val = min(projected_2027 / target_val, 1.0)
+    sel_scenario = st.selectbox("Scenario Selection:", ["Baseline", "Optimistic", "Pessimistic"])
+    proj_val = 62.5 if sel_scenario == "Optimistic" else (56.5 if sel_scenario == "Baseline" else 52.0)
+    prog = min(proj_val / 60.0, 1.0)
     
     col_a, col_b = st.columns(2)
-    col_a.metric(label=f"Projected 2027 Rate ({scenario})", value=f"{projected_2027}%", delta=f"Target: {target_val}%")
-    col_b.metric(label="Progress Ratio", value=f"{round(progress_val * 100, 1)}%", delta="National Strategy Milestone")
+    col_a.metric("Projected 2027 Rate", f"{proj_val}%", "Target: 60.0%")
+    col_b.metric("Strategy Achievement", f"{round(prog * 100, 1)}%", "NFIS-II Milestone")
     
-    # Interactive Visual 5: Gauge / Progress representation
-    st.progress(progress_val)
-    st.caption(f"Progress toward National Financial Inclusion Strategy targets under the **{scenario}** outlook.")
-
-    # Required data download functionality
+    st.progress(prog)
     st.markdown("---")
-    st.subheader("Export Analysis Data")
-    st.download_button(
-        label="📥 Download Processed Enriched Dataset (.csv)",
-        data=df.to_csv(index=False).encode('utf-8'),
-        file_name='ethiopia_financial_inclusion_enriched.csv',
-        mime='text/csv'
-    )
+    st.download_button("📥 Download Processed Enriched Dataset (.csv)", df.to_csv(index=False).encode('utf-8'), "ethiopia_fi_enriched.csv", "text/csv")
